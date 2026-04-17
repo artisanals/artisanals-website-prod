@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 // The actual content of your moodboard
 const MoodboardContent = () => {
     return (
-        <div className="h-screen w-screen flex items-center justify-center border-dashed border-2 border-gray-200">
+        <div className="h-screen w-screen flex items-center justify-center bg-grid-dashed">
             <h1 className="text-4xl font-semibold text-neutral-800">
                 Moodboard Canvas
             </h1>
