@@ -76,7 +76,7 @@ const MoodboardsPage = () => {
                     >
                         <p
                             className={cn(
-                                "font-mona-sans relative text-sm text-zinc-800 transition-colors duration-300 ease-in-out group-hover:text-zinc-500 active:text-zinc-800",
+                                "font-mona-sans relative text-sm text-zinc-900 transition-colors duration-300 ease-in-out group-hover:text-zinc-500 active:text-zinc-900 ",
                                 // tailwindClasses.before,
                                 // tailwindClasses.after
                             )}
@@ -90,7 +90,7 @@ const MoodboardsPage = () => {
                     >
                         <p
                             className={cn(
-                                "font-mona-sans relative text-sm text-zinc-800 transition-colors duration-300 ease-in-out group-hover:text-zinc-500 active:text-zinc-800",
+                                "font-mona-sans relative text-sm text-zinc-900 transition-colors duration-300 ease-in-out group-hover:text-zinc-500 active:text-zinc-900",
                                 // tailwindClasses.before,
                                 // tailwindClasses.after
                             )}
@@ -102,10 +102,10 @@ const MoodboardsPage = () => {
             </div>
             <motion.div
                 ref={containerRef}
-                drag
+                // drag
                 style={{ x: wrappedX, y: wrappedY }}
                 // Removing bounce to keep the 1:1 raw tracking feel
-                dragElastic={0}
+                // dragElastic={0}
                 className="flex w-max will-change-transform"
             >
                 {/* The 3x3 Grid. 
