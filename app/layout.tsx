@@ -5,6 +5,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { monaSans } from "@/providers/font-provider";
+import { LenisProvider } from "@/providers/lenis-provider";
+import { GSAPProvider } from "@/providers/gsap-provider";
 
 export const metadata: Metadata = {
     title: "Artisanals",
@@ -18,7 +20,11 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" className={cn(monaSans.variable, `h-full antialiased`)}>
-            <body className="flex min-h-full flex-col">{children}</body>
+            <body className="flex min-h-full flex-col">
+                <GSAPProvider>
+                    <LenisProvider>{children} </LenisProvider>
+                </GSAPProvider>
+            </body>
         </html>
     );
 }
