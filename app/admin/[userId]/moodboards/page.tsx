@@ -1,5 +1,6 @@
 "use client";
 
+import MoodboardContent from "@/components/moodboard-content";
 import tailwindClasses from "@/constants/tailwind-classes";
 import { cn } from "@/lib/utils";
 import {
@@ -10,17 +11,6 @@ import {
     animate,
 } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-
-// actual content of the the moodboard
-const MoodboardContent = () => {
-    return (
-        <div className="bg-dotted flex h-screen w-screen items-center justify-center">
-            <p className="font-mona-sans text-4xl font-medium text-zinc-800">
-                Moodboard Canvas
-            </p>
-        </div>
-    );
-};
 
 const MoodboardsPage = () => {
     const containerRef = useRef<HTMLDivElement>(null);
