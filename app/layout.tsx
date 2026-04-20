@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 // local imports
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { monaSans } from "@/providers/font-provider";
+import { branch, monaSans } from "@/providers/font-provider";
 import { LenisProvider } from "@/providers/lenis-provider";
 import { GSAPProvider } from "@/providers/gsap-provider";
 import { ConvexClientProvider } from "@/providers/convex-client-provider";
@@ -20,7 +20,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" className={cn(monaSans.variable, `h-full antialiased`)}>
+        <html lang="en" className={cn(monaSans.variable, branch.variable, `h-full antialiased`)}>
             <body className="flex min-h-full flex-col">
                 <GSAPProvider>
                     <ConvexClientProvider>
