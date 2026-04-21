@@ -5,7 +5,7 @@ const ExperiencePage = () => {
                 <p className="font-branch text-gold text-[80px] font-medium">
                     artisanals
                 </p>
-                <p className="font-mona-sans font-light text-gold text-md opacity-75">
+                <p className="font-mona-sans text-gold text-md font-light opacity-75">
                     coming soon
                 </p>
             </div>

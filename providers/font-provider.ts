@@ -14,4 +14,3 @@ export const branch = localFont({
     variable: "--font-branch",
     display: "swap",
 });
-

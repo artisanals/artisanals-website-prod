@@ -1,9 +1,7 @@
-import React from 'react'
+import React from "react";
 
 const BrandGuidelinesPage = () => {
-  return (
-    <div>BrandGuidelinesPage</div>
-  )
-}
+    return <div>BrandGuidelinesPage</div>;
+};
 
-export default BrandGuidelinesPage
+export default BrandGuidelinesPage;

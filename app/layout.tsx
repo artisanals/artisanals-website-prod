@@ -20,11 +20,18 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" className={cn(monaSans.variable, branch.variable, `h-full antialiased`)}>
+        <html
+            lang="en"
+            className={cn(
+                monaSans.variable,
+                branch.variable,
+                `h-full antialiased`
+            )}
+        >
             <body className="flex min-h-full flex-col">
                 <GSAPProvider>
                     <ConvexClientProvider>
-                        <LenisProvider>{children} </LenisProvider>
+                        <LenisProvider>{children}</LenisProvider>
                     </ConvexClientProvider>
                 </GSAPProvider>
             </body>
