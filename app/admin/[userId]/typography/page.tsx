@@ -1,8 +1,5 @@
-
 const TypographyPage = () => {
-    return (
-        <div>TypographyPage</div>
-    )
-}
+    return <div>TypographyPage</div>;
+};
 
-export default TypographyPage
+export default TypographyPage;
