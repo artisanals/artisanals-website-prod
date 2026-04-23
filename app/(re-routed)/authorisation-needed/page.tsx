@@ -167,10 +167,14 @@ const AuthorisationNeededPage = () => {
                 }
 
                 // Step 2: Key is valid — send OTP via Better Auth
-                await authClient.emailOtp.sendVerificationOtp({
+                const { data, error } = await authClient.emailOtp.sendVerificationOtp({
                     email,
                     type: "sign-in",
                 });
+
+                if (error) {
+                    throw new Error(error.message ?? "Failed to send verification code. Please try again.");
+                }
 
                 if (sessionCodeSent) {
                     toast.success("Code Resent", {
