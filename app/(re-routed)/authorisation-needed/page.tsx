@@ -2,24 +2,36 @@
 
 // global imports
 import { z } from "zod";
+import { toast } from "sonner";
+import { useMutation } from "convex/react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "@tanstack/react-form";
-import { motion, AnimatePresence } from "motion/react";
 
 // local imports
 import { cn } from "@/lib/utils";
+import { api } from "@/convex/_generated/api";
+import { authClient } from "@/lib/auth-client";
 
 const STORAGE_KEY = "artisanals_admin_auth_progress";
 
 const AuthorisationNeededPage = () => {
     // Local State Management
     const [codeSent, setCodeSent] = useState(false);
+    const [sessionCodeSent, setSessionCodeSent] = useState(false);
 
     const [isSendingCode, setIsSendingCode] = useState(false);
     const [timeLeft, setTimeLeft] = useState(0);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isRestored, setIsRestored] = useState(false);
+    const [serverError, setServerError] = useState<string | null>(null);
+
+    const router = useRouter();
+
+    // Convex mutations
+    const validateKey = useMutation(api.personnelKeys.validatePersonnelKey);
+    const lockKey = useMutation(api.personnelKeys.lockPersonnelKeyEmail);
 
     // 60-Second Timer Logic
     useEffect(() => {
@@ -38,29 +50,50 @@ const AuthorisationNeededPage = () => {
         },
         onSubmit: async ({ value }) => {
             setIsSubmitting(true);
+            setServerError(null);
 
             try {
-                // Example Better-Auth / Convex hybrid submission
-                /*
-        const { data, error } = await authClient.signIn.emailOtp({
-          email: value.email,
-          otp: value.code,
-        });
-        
-        if (error) throw new Error(error.message);
-        
-        // If Better-Auth succeeds, Next.js middleware and Convex isAuthenticated() 
-        // will pick up the session cookie automatically on the next server hit.
-        */
+                // Step 1: Verify the OTP with Better Auth
+                const { data, error } = await authClient.signIn.emailOtp({
+                    email: value.email,
+                    otp: value.code,
+                });
+
+                if (error) {
+                    setServerError(error.message ?? "OTP verification failed.");
+                    toast.error("Verification Failed", {
+                        description: error.message ?? "Invalid or expired code.",
+                        className: "font-mona-sans bg-red-50 text-red-700 border-red-200",
+                    });
+                    return;
+                }
+
+                // Step 2: Lock the personnel key to this email (idempotent if already locked)
+                await lockKey({
+                    personnelKey: value.personnelKey,
+                    email: value.email,
+                });
 
                 console.log("Admin verified. Clearing local state...");
+                toast.success("Access Granted", {
+                    description: "Identity verified. Redirecting to dashboard...",
+                    className: "font-mona-sans bg-green-50 text-green-700 border-green-200",
+                });
 
-                // 🧹 Clean up exactly on success
+                // 🧹 Clean up on success
                 localStorage.removeItem(STORAGE_KEY);
 
-                // Route to admin dashboard...
-            } catch (error) {
+                // Route to admin dashboard
+                router.push("/admin");
+            } catch (error: any) {
                 console.error("Auth failed:", error);
+                setServerError(
+                    error?.message ?? "Authentication failed. Please try again."
+                );
+                toast.error("Authentication Error", {
+                    description: error?.message ?? "Authentication failed. Please try again.",
+                    className: "font-mona-sans bg-red-50 text-red-700 border-red-200",
+                });
             } finally {
                 setIsSubmitting(false);
             }
@@ -76,7 +109,13 @@ const AuthorisationNeededPage = () => {
                 if (parsed.personnelKey)
                     form.setFieldValue("personnelKey", parsed.personnelKey);
                 if (parsed.email) form.setFieldValue("email", parsed.email);
-                if (parsed.codeSent) setCodeSent(parsed.codeSent);
+                if (parsed.codeSent) {
+                    setCodeSent(parsed.codeSent);
+                    toast.info("Session Restored", {
+                        description: "Your previous form progress has been recovered.",
+                        className: "font-mona-sans bg-blue-50 text-blue-800 border-blue-200",
+                    });
+                }
             } catch (err) {
                 console.error("Failed to restore admin form state:", err);
             }
@@ -110,22 +149,53 @@ const AuthorisationNeededPage = () => {
 
         if (personnelKey && email && email.includes("@")) {
             setIsSendingCode(true);
+            setServerError(null);
             try {
-                // Execute your Better-Auth OTP send here
-                /*
+                // Step 1: Validate personnel key + email pair in Convex
+                const result = await validateKey({
+                    personnelKey,
+                    email,
+                });
+
+                if (!result.success) {
+                    setServerError(result.error);
+                    toast.error("Verification Failed", {
+                        description: result.error,
+                        className: "font-mona-sans bg-red-50 text-red-700 border-red-200",
+                    });
+                    return;
+                }
+
+                // Step 2: Key is valid — send OTP via Better Auth
                 await authClient.emailOtp.sendVerificationOtp({
                     email,
                     type: "sign-in",
                 });
-                */
 
-                // Simulated delay for UX
-                await new Promise((resolve) => setTimeout(resolve, 1500));
+                if (sessionCodeSent) {
+                    toast.success("Code Resent", {
+                        description: `A new verification code was sent to ${email}`,
+                        className: "font-mona-sans bg-zinc-900 text-white border-zinc-800",
+                    });
+                } else {
+                    toast.success("Verification Code Sent", {
+                        description: `We've sent a 10-digit code to ${email}`,
+                        className: "font-mona-sans bg-zinc-900 text-white border-zinc-800",
+                    });
+                }
 
                 setCodeSent(true);
+                setSessionCodeSent(true);
                 setTimeLeft(60);
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Failed to send code", error);
+                setServerError(
+                    error?.message ?? "Failed to send verification code."
+                );
+                toast.error("Failed to Send Code", {
+                    description: error?.message ?? "Failed to send verification code. Please try again.",
+                    className: "font-mona-sans bg-red-50 text-red-700 border-red-200",
+                });
             } finally {
                 setIsSendingCode(false);
             }
@@ -150,11 +220,20 @@ const AuthorisationNeededPage = () => {
                             Yo, admin pages are gated.
                         </p>
 
-                        <p className="font-mona-sans text-xl leading-[115%] font-medium text-zinc-900">
+                        <p className="font-mona-sans text-xl leading-[115%] font-medium text-zinc-800">
                             Let&apos;s verify your identity with your Personnel
-                            Key and an OTC.
+                            Key & OTC and get you in.
                         </p>
                     </div>
+
+                    {/* Server Error Banner */}
+                    {serverError && (
+                        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+                            <p className="font-mono text-sm font-medium text-red-700">
+                                {serverError}
+                            </p>
+                        </div>
+                    )}
 
                     <div className="mt-10 w-full">
                         <div>
@@ -313,7 +392,7 @@ const AuthorisationNeededPage = () => {
                                                             <span className="text-green-700">
                                                                 Code Sent ✓
                                                             </span>
-                                                        ) : codeSent ===
+                                                        ) : sessionCodeSent ===
                                                           true ? (
                                                             "Resend Code"
                                                         ) : (

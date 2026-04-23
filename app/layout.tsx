@@ -4,10 +4,11 @@ import type { Metadata } from "next";
 // local imports
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { branch, monaSans } from "@/providers/font-provider";
-import { LenisProvider } from "@/providers/lenis-provider";
 import { GSAPProvider } from "@/providers/gsap-provider";
+import { LenisProvider } from "@/providers/lenis-provider";
+import { branch, monaSans } from "@/providers/font-provider";
 import { ConvexClientProvider } from "@/providers/convex-client-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
     title: "Artisanals",
@@ -34,6 +35,7 @@ export default function RootLayout({
                         <LenisProvider>{children}</LenisProvider>
                     </ConvexClientProvider>
                 </GSAPProvider>
+                <Toaster />
             </body>
         </html>
     );
