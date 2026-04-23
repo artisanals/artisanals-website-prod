@@ -1,48 +1,73 @@
 "use client";
 
-import { useForm } from "@tanstack/react-form";
+// global imports
 import { z } from "zod";
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
+import { useForm } from "@tanstack/react-form";
 import { motion, AnimatePresence } from "motion/react";
 
-// Form validation schema
-const formSchema = z.object({
-    personnelKey: z.string().min(1, "Personnel Key is required"),
-    email: z.email("Invalid email address"),
-    code: z
-        .string()
-        .length(10, "Code must be exactly 10 characters")
-        .or(z.literal("")),
-});
+// local imports
+import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "artisanals_admin_auth_progress";
 
 const AuthorisationNeededPage = () => {
+    // Local State Management
     const [codeSent, setCodeSent] = useState(false);
+
+    const [isSendingCode, setIsSendingCode] = useState(false);
+    const [timeLeft, setTimeLeft] = useState(0);
+
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isRestored, setIsRestored] = useState(false);
+
+    // 60-Second Timer Logic
+    useEffect(() => {
+        if (timeLeft <= 0) return;
+        const timerId = setInterval(() => {
+            setTimeLeft((prev) => prev - 1);
+        }, 1000);
+        return () => clearInterval(timerId);
+    }, [timeLeft]);
 
     const form = useForm({
         defaultValues: {
             personnelKey: "",
             email: "",
-            code: "",
-        },
-        validators: {
-            onChange: formSchema,
+            code: "", // Ephemeral: never touches localStorage
         },
         onSubmit: async ({ value }) => {
             setIsSubmitting(true);
-            // Simulating API call
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-            console.log("Form submitted successfully:", value);
-            setIsSubmitting(false);
-            // Clear localStorage on success
-            localStorage.removeItem(STORAGE_KEY);
+
+            try {
+                // Example Better-Auth / Convex hybrid submission
+                /*
+        const { data, error } = await authClient.signIn.emailOtp({
+          email: value.email,
+          otp: value.code,
+        });
+        
+        if (error) throw new Error(error.message);
+        
+        // If Better-Auth succeeds, Next.js middleware and Convex isAuthenticated() 
+        // will pick up the session cookie automatically on the next server hit.
+        */
+
+                console.log("Admin verified. Clearing local state...");
+
+                // 🧹 Clean up exactly on success
+                localStorage.removeItem(STORAGE_KEY);
+
+                // Route to admin dashboard...
+            } catch (error) {
+                console.error("Auth failed:", error);
+            } finally {
+                setIsSubmitting(false);
+            }
         },
     });
 
-    // Restore state from localStorage on mount
+    // 1. Hydration Phase (Read once on mount)
     useEffect(() => {
         const savedData = localStorage.getItem(STORAGE_KEY);
         if (savedData) {
@@ -51,197 +76,309 @@ const AuthorisationNeededPage = () => {
                 if (parsed.personnelKey)
                     form.setFieldValue("personnelKey", parsed.personnelKey);
                 if (parsed.email) form.setFieldValue("email", parsed.email);
-                if (parsed.code) form.setFieldValue("code", parsed.code);
-                if (parsed.codeSent) setCodeSent(true);
+                if (parsed.codeSent) setCodeSent(parsed.codeSent);
             } catch (err) {
-                console.error("Failed to restore form state:", err);
+                console.error("Failed to restore admin form state:", err);
             }
         }
+        setIsRestored(true);
     }, [form]);
 
-    // Save state to localStorage on changes
+    // 2. Persistence Phase (Observe TanStack store directly)
     useEffect(() => {
-        const values = form.state.values;
-        localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify({
-                ...values,
-                codeSent,
-            })
-        );
-    }, [form.state.values, codeSent]);
+        if (!isRestored) return;
+
+        const { unsubscribe } = form.store.subscribe(() => {
+            const currentValues = form.state.values;
+
+            localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify({
+                    personnelKey: currentValues.personnelKey,
+                    email: currentValues.email,
+                    codeSent: codeSent,
+                })
+            );
+        });
+
+        return () => unsubscribe();
+    }, [form.store, isRestored, codeSent]);
 
     const handleSendCode = async () => {
         const personnelKey = form.getFieldValue("personnelKey");
         const email = form.getFieldValue("email");
 
-        // Simple validation check before "sending"
         if (personnelKey && email && email.includes("@")) {
-            setCodeSent(true);
+            setIsSendingCode(true);
+            try {
+                // Execute your Better-Auth OTP send here
+                /*
+                await authClient.emailOtp.sendVerificationOtp({
+                    email,
+                    type: "sign-in",
+                });
+                */
+
+                // Simulated delay for UX
+                await new Promise((resolve) => setTimeout(resolve, 1500));
+
+                setCodeSent(true);
+                setTimeLeft(60);
+            } catch (error) {
+                console.error("Failed to send code", error);
+            } finally {
+                setIsSendingCode(false);
+            }
         } else {
-            // Trigger validation to show errors
             form.validateAllFields("change");
+            form.validateAllFields("blur");
         }
     };
 
     return (
-        <div className="bg-dotted no-scrollbar flex h-screen w-screen flex-col justify-between overflow-x-hidden px-12 py-8">
-            <div className="flex justify-between">
-                <p className="font-mona-sans text-md font-medium text-zinc-900">
-                    artisanals
-                </p>
-            </div>
-
-            <div className="flex flex-col gap-y-10">
-                <div className="space-y-6">
-                    <p className="font-mona-sans leading-[115%] font-medium tracking-tight text-zinc-900 text-[68px]">
-                        Yo, admin pages are gated.
-                    </p>
-
-                    <p className="font-mona-sans leading-[115%] font-medium text-zinc-900 text-xl">
-                        Let&apos;s verify your identity with your Personnel Key and a
-                        one-time code.
+        <div className="bg-dotted no-scrollbar flex h-screen w-screen justify-between overflow-x-hidden px-12 py-8">
+            <div className="flex flex-col justify-between">
+                <div className="flex justify-between">
+                    <p className="font-mona-sans text-md font-medium text-zinc-900">
+                        artisanals
                     </p>
                 </div>
 
-                <div className="w-full mt-10">
-                    <div>
-<form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            form.handleSubmit();
-                        }}
-                        className="space-y-8"
-                    >
-                        <div className="space-y-6">
-                            {/* Personnel Key Field */}
-                            <form.Field
-                                name="personnelKey"
-                                children={(field) => (
-                                    <div className="group space-y-2">
-                                        <label className="text-[10px] font-bold tracking-[0.2em] text-zinc-400 uppercase">
-                                            Personnel Key
-                                        </label>
-                                        <input
-                                            name={field.name}
-                                            value={field.state.value}
-                                            onBlur={field.handleBlur}
-                                            onChange={(e) =>
-                                                field.handleChange(
-                                                    e.target.value
-                                                )
-                                            }
-                                            autoComplete="off"
-                                            className={cn(
-                                                "w-full border-b-2 border-zinc-200 bg-transparent py-3 text-2xl font-medium transition-all duration-500 outline-none",
-                                                "focus:border-zinc-900 focus:placeholder:opacity-0",
-                                                field.state.meta.errors.length >
-                                                    0
-                                                    ? "border-red-500 text-red-500"
-                                                    : "text-zinc-900"
-                                            )}
-                                            placeholder="PK-000-000"
-                                        />
-                                        {field.state.meta.errors.length > 0 && (
-                                            <p className="text-[10px] font-bold text-red-500 uppercase">
-                                                {(
-                                                    field.state.meta
-                                                        .errors[0] as any
-                                                )?.message ??
-                                                    field.state.meta.errors[0]}
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-                            />
+                <div className="flex flex-col gap-y-10">
+                    <div className="space-y-6">
+                        <p className="font-mona-sans text-[68px] leading-[115%] font-medium text-zinc-900">
+                            Yo, admin pages are gated.
+                        </p>
 
-                            {/* Email Field */}
-                            <form.Field
-                                name="email"
-                                children={(field) => (
-                                    <div className="group space-y-2">
-                                        <label className="text-[10px] font-bold tracking-[0.2em] text-zinc-400 uppercase">
-                                            Email Address
-                                        </label>
-                                        <input
-                                            name={field.name}
-                                            value={field.state.value}
-                                            onBlur={field.handleBlur}
-                                            onChange={(e) =>
-                                                field.handleChange(
-                                                    e.target.value
-                                                )
-                                            }
-                                            type="email"
-                                            autoComplete="email"
-                                            className={cn(
-                                                "w-full border-b-2 border-zinc-200 bg-transparent py-3 text-2xl font-medium transition-all duration-500 outline-none",
-                                                "focus:border-zinc-900 focus:placeholder:opacity-0",
-                                                field.state.meta.errors.length >
-                                                    0
-                                                    ? "border-red-500 text-red-500"
-                                                    : "text-zinc-900"
-                                            )}
-                                            placeholder="admin@artisanals.com"
-                                        />
-                                        {field.state.meta.errors.length > 0 && (
-                                            <p className="text-[10px] font-bold text-red-500 uppercase">
-                                                {(
-                                                    field.state.meta
-                                                        .errors[0] as any
-                                                )?.message ??
-                                                    field.state.meta.errors[0]}
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-                            />
-                        </div>
+                        <p className="font-mona-sans text-xl leading-[115%] font-medium text-zinc-900">
+                            Let&apos;s verify your identity with your Personnel
+                            Key and an OTC.
+                        </p>
+                    </div>
 
-                        {/* Send Code Button */}
-                        <div className="flex items-center gap-4">
-                            <button
-                                type="button"
-                                onClick={handleSendCode}
-                                disabled={codeSent}
-                                className={cn(
-                                    "relative h-12 overflow-hidden rounded-full px-8 text-[11px] font-black tracking-[0.2em] uppercase transition-all duration-500",
-                                    codeSent
-                                        ? "cursor-default bg-zinc-100 text-zinc-400"
-                                        : "bg-zinc-900 text-white shadow-xl shadow-zinc-200 hover:bg-black hover:shadow-2xl active:scale-95"
-                                )}
+                    <div className="mt-10 w-full">
+                        <div>
+                            <form
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    form.handleSubmit();
+                                }}
+                                className="space-y-8"
                             >
-                                <span className="relative z-10">
-                                    {codeSent
-                                        ? "Verification Sent"
-                                        : "Request Code"}
-                                </span>
-                                {!codeSent && (
-                                    <div className="absolute inset-0 bg-white/20" />
-                                )}
-                            </button>
-                            {codeSent && (
-                                <button
-                                    onClick={() => setCodeSent(false)}
-                                    className="text-[10px] font-bold text-zinc-400 uppercase transition-colors hover:text-zinc-900"
-                                >
-                                    Resend?
-                                </button>
-                            )}
-                        </div>
+                                <div className="space-y-6">
+                                    {/* Personnel Key Field */}
+                                    <form.Field
+                                        name="personnelKey"
+                                        validators={{
+                                            onChange: z
+                                                .string()
+                                                .min(
+                                                    1,
+                                                    "Personnel Key is required"
+                                                ),
+                                        }}
+                                        children={(field) => (
+                                            <div className="group space-y-2">
+                                                <label className="font-mona-sans text-[10px] font-medium tracking-[0.2em] text-zinc-500 uppercase">
+                                                    Personnel Key
+                                                </label>
+                                                <input
+                                                    name={field.name}
+                                                    value={field.state.value}
+                                                    onBlur={field.handleBlur}
+                                                    onChange={(e) => {
+                                                        const value =
+                                                            e.target.value.replace(
+                                                                /[^a-zA-Z0-9-]/g,
+                                                                ""
+                                                            );
+                                                        field.handleChange(
+                                                            value
+                                                        );
+                                                    }}
+                                                    autoComplete="off"
+                                                    className={cn(
+                                                        "w-full border-b-2 bg-transparent py-3 font-mono text-lg font-medium tracking-widest uppercase transition-all duration-500 outline-none",
+                                                        field.state.meta
+                                                            .isTouched &&
+                                                            field.state.meta
+                                                                .errors.length >
+                                                                0
+                                                            ? "border-red-500 text-red-500"
+                                                            : "border-zinc-200 text-zinc-900 focus:border-zinc-900 focus:placeholder:opacity-0"
+                                                    )}
+                                                    placeholder="PK-Name-000-000"
+                                                />
+                                                <div className="h-4">
+                                                    {field.state.meta
+                                                        .isTouched &&
+                                                        field.state.meta.errors
+                                                            .length > 0 && (
+                                                            <p className="text-[10px] font-bold text-red-500 uppercase">
+                                                                {(
+                                                                    field.state
+                                                                        .meta
+                                                                        .errors[0] as any
+                                                                )?.message ??
+                                                                    field.state
+                                                                        .meta
+                                                                        .errors[0]}
+                                                            </p>
+                                                        )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    />
 
-                        {/* Code Field (Revealed and enabled after code sent) */}
-                        <AnimatePresence>
-                            {codeSent && (
-                                <div className="overflow-hidden">
+                                    {/* Email & Send Code Row */}
+                                    <form.Field
+                                        name="email"
+                                        validators={{
+                                            onBlur: z
+                                                .string()
+                                                .email("Invalid email address"),
+                                        }}
+                                        children={(field) => (
+                                            <div className="group space-y-2">
+                                                <label className="font-mona-sans text-[10px] font-medium tracking-[0.2em] text-zinc-500 uppercase">
+                                                    Email Address
+                                                </label>
+
+                                                {/* Unified Border Container */}
+                                                <div
+                                                    className={cn(
+                                                        "flex w-full items-center justify-between border-b-2 transition-all duration-500",
+                                                        field.state.meta
+                                                            .isTouched &&
+                                                            field.state.meta
+                                                                .errors.length >
+                                                                0
+                                                            ? "border-red-500 focus-within:border-red-500"
+                                                            : "border-zinc-200 focus-within:border-zinc-900"
+                                                    )}
+                                                >
+                                                    <input
+                                                        name={field.name}
+                                                        value={
+                                                            field.state.value
+                                                        }
+                                                        onBlur={
+                                                            field.handleBlur
+                                                        }
+                                                        onChange={(e) =>
+                                                            field.handleChange(
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        type="email"
+                                                        autoComplete="email"
+                                                        className={cn(
+                                                            "w-full bg-transparent py-3 font-mono text-lg tracking-widest uppercase transition-all duration-500 outline-none",
+                                                            "focus:placeholder:opacity-0",
+                                                            field.state.meta
+                                                                .isTouched &&
+                                                                field.state.meta
+                                                                    .errors
+                                                                    .length > 0
+                                                                ? "text-red-500"
+                                                                : "text-zinc-900"
+                                                        )}
+                                                        placeholder="admin@artisanals.com"
+                                                    />
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleSendCode}
+                                                        disabled={
+                                                            isSendingCode ||
+                                                            timeLeft > 0
+                                                        }
+                                                        className={cn(
+                                                            "pl-4 font-mono text-lg font-medium tracking-wider whitespace-nowrap uppercase transition-colors",
+                                                            isSendingCode ||
+                                                                timeLeft > 0
+                                                                ? "cursor-not-allowed text-zinc-400"
+                                                                : "cursor-pointer text-zinc-900 hover:text-zinc-500 active:text-zinc-900"
+                                                        )}
+                                                    >
+                                                        {isSendingCode ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <span>
+                                                                    Sending
+                                                                </span>
+                                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-900" />
+                                                            </div>
+                                                        ) : timeLeft > 0 ? (
+                                                            <span className="text-green-700">
+                                                                Code Sent ✓
+                                                            </span>
+                                                        ) : codeSent ===
+                                                          true ? (
+                                                            "Resend Code"
+                                                        ) : (
+                                                            "Send Code"
+                                                        )}
+                                                    </button>
+                                                </div>
+
+                                                {/* Errors & Timer Footer */}
+                                                <div className="flex h-4 items-start justify-between">
+                                                    <div>
+                                                        {field.state.meta
+                                                            .isTouched &&
+                                                            field.state.meta
+                                                                .errors.length >
+                                                                0 && (
+                                                                <p className="text-[10px] font-bold text-red-500 uppercase">
+                                                                    {(
+                                                                        field
+                                                                            .state
+                                                                            .meta
+                                                                            .errors[0] as any
+                                                                    )
+                                                                        ?.message ??
+                                                                        field
+                                                                            .state
+                                                                            .meta
+                                                                            .errors[0]}
+                                                                </p>
+                                                            )}
+                                                    </div>
+                                                    {timeLeft > 0 && (
+                                                        <p className="font-mona-sans text-[10px] tracking-widest text-zinc-500 uppercase">
+                                                            Resend in {timeLeft}{" "}
+                                                            secs
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    />
+
+                                    {/* Standardized Code Field (Always Visible, Conditionally Disabled) */}
                                     <form.Field
                                         name="code"
+                                        validators={{
+                                            onChange: z
+                                                .string()
+                                                .length(
+                                                    10,
+                                                    "Code must be exactly 10 characters"
+                                                )
+                                                .or(z.literal("")),
+                                        }}
                                         children={(field) => (
-                                            <div className="group space-y-4 pt-4">
-                                                <label className="flex items-center gap-2 text-[10px] font-bold tracking-[0.2em] text-zinc-900 uppercase">
-                                                    Enter 10-Character Code
-                                                    <span className="h-1 w-1 rounded-full bg-zinc-900" />
+                                            <div className="group space-y-2">
+                                                <label
+                                                    className={cn(
+                                                        "font-mona-sans text-[10px] font-medium tracking-[0.2em] uppercase transition-colors duration-500",
+                                                        codeSent
+                                                            ? "text-zinc-500"
+                                                            : "text-zinc-300"
+                                                    )}
+                                                >
+                                                    One-Time Code
                                                 </label>
                                                 <input
                                                     name={field.name}
@@ -253,73 +390,92 @@ const AuthorisationNeededPage = () => {
                                                         )
                                                     }
                                                     maxLength={10}
-                                                    autoComplete="one-time-code"
+                                                    // autoComplete="one-time-code"
+                                                    disabled={!codeSent}
                                                     className={cn(
-                                                        "w-full rounded-2xl border-2 border-zinc-200 bg-zinc-50 p-6 text-center font-mono text-4xl tracking-[0.3em] transition-all duration-500 outline-none",
-                                                        "focus:border-zinc-900 focus:bg-white focus:shadow-2xl focus:shadow-zinc-100",
+                                                        "w-full border-b-2 bg-transparent py-3 font-mono text-lg font-medium tracking-[6px] uppercase transition-all duration-500 outline-none",
+                                                        !codeSent
+                                                            ? "border-zinc-100 text-zinc-300 placeholder:text-zinc-200"
+                                                            : "border-zinc-200 text-zinc-900 focus:border-zinc-900 focus:placeholder:opacity-0",
                                                         field.state.meta.errors
                                                             .length > 0 &&
                                                             field.state.value
                                                                 ?.length === 10
                                                             ? "border-red-500 text-red-500"
-                                                            : "text-zinc-900"
+                                                            : ""
                                                     )}
                                                     placeholder="••••••••••"
                                                 />
+                                                <div className="h-4">
+                                                    {field.state.meta.errors
+                                                        .length > 0 &&
+                                                        field.state.value
+                                                            ?.length === 10 && (
+                                                            <p className="text-[10px] font-bold text-red-500 uppercase">
+                                                                {(
+                                                                    field.state
+                                                                        .meta
+                                                                        .errors[0] as any
+                                                                )?.message ??
+                                                                    field.state
+                                                                        .meta
+                                                                        .errors[0]}
+                                                            </p>
+                                                        )}
+                                                </div>
                                             </div>
                                         )}
                                     />
                                 </div>
-                            )}
-                        </AnimatePresence>
 
-                        {/* Submit Button */}
-                        <form.Subscribe
-                            selector={(state) => ({
-                                canSubmit: state.canSubmit,
-                                isSubmitting: state.isSubmitting,
-                                code: state.values.code,
-                            })}
-                        >
-                            {(state) => (
-                                <button
-                                    type="submit"
-                                    disabled={
-                                        !state.canSubmit ||
-                                        state.isSubmitting ||
-                                        state.code.length !== 10
-                                    }
-                                    className={cn(
-                                        "w-full rounded-2xl py-6 text-sm font-black tracking-[0.3em] uppercase transition-all duration-700",
-                                        !state.canSubmit ||
-                                            state.isSubmitting ||
-                                            state.code.length !== 10
-                                            ? "cursor-not-allowed border border-zinc-200 bg-zinc-100 text-zinc-300"
-                                            : "bg-zinc-900 text-white shadow-2xl shadow-zinc-300 hover:-translate-y-1 hover:bg-black active:scale-95"
-                                    )}
+                                {/* Submit Button */}
+                                <form.Subscribe
+                                    selector={(state) => ({
+                                        canSubmit: state.canSubmit,
+                                        isSubmitting: state.isSubmitting,
+                                        code: state.values.code,
+                                    })}
                                 >
-                                    {state.isSubmitting ? (
-                                        <div className="flex items-center justify-center gap-3">
-                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                                            <span>Verifying Access</span>
-                                        </div>
-                                    ) : (
-                                        "Authenticate"
+                                    {(state) => (
+                                        <button
+                                            type="submit"
+                                            disabled={
+                                                !state.canSubmit ||
+                                                state.isSubmitting ||
+                                                state.code.length !== 10
+                                            }
+                                            className={cn(
+                                                "font-mona-sans w-full rounded-full py-5 text-lg font-medium tracking-wider transition-all duration-300",
+                                                !state.canSubmit ||
+                                                    state.isSubmitting ||
+                                                    state.code.length !== 10
+                                                    ? "cursor-not-allowed border border-zinc-200 bg-zinc-100 text-zinc-300"
+                                                    : "cursor-pointer bg-zinc-900 text-white hover:bg-zinc-700 active:bg-zinc-900"
+                                            )}
+                                        >
+                                            {state.isSubmitting ? (
+                                                <div className="flex items-center justify-center gap-3">
+                                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                                                    <span>
+                                                        Verifying Access
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                "Lets fkin gooo!"
+                                            )}
+                                        </button>
                                     )}
-                                </button>
-                            )}
-                        </form.Subscribe>
-                    </form>
+                                </form.Subscribe>
+                            </form>
+                        </div>
                     </div>
-
-                    
                 </div>
-            </div>
 
-            <div className="flex justify-between">
-                <p className="font-mona-sans text-md font-medium text-zinc-900">
-                    Branding this page soon.
-                </p>
+                <div className="flex justify-between">
+                    <p className="font-mona-sans text-md font-medium text-zinc-900">
+                        Branding this page soon.
+                    </p>
+                </div>
             </div>
         </div>
     );
