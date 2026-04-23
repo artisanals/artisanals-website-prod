@@ -183,7 +183,7 @@ const AuthorisationNeededPage = () => {
                     });
                 } else {
                     toast.success("Verification Code Sent", {
-                        description: `We've sent a 10-digit code to ${email}`,
+                        description: `We've sent a 10-character code to ${email}`,
                         className: "font-mona-sans bg-zinc-900 text-white border-zinc-800",
                     });
                 }
@@ -467,11 +467,16 @@ const AuthorisationNeededPage = () => {
                                                     name={field.name}
                                                     value={field.state.value}
                                                     onBlur={field.handleBlur}
-                                                    onChange={(e) =>
+                                                    onChange={(e) => {
+                                                        const value =
+                                                            e.target.value.replace(
+                                                                /[^a-zA-Z0-9]/g,
+                                                                ""
+                                                            );
                                                         field.handleChange(
-                                                            e.target.value
-                                                        )
-                                                    }
+                                                            value.toUpperCase()
+                                                        );
+                                                    }}
                                                     maxLength={10}
                                                     // autoComplete="one-time-code"
                                                     disabled={!codeSent}

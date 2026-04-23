@@ -27,11 +27,18 @@ export const createAuthOptions = (ctx: GenericCtx<DataModel>) => {
         secret: process.env.BETTER_AUTH_SECRET,
         database: authComponent.adapter(ctx),
         emailAndPassword: {
-            enabled: true,
+            enabled: false,
         },
         plugins: [
             convex({ authConfig }),
             emailOTP({
+                otpLength: 10,
+                generateOTP: () => {
+                    const chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                    const array = new Uint8Array(10);
+                    crypto.getRandomValues(array);
+                    return Array.from(array, (byte) => chars[byte % chars.length]).join("");
+                },
                 async sendVerificationOTP({ email, otp, type }, request) {
                     const resend = new Resend(process.env.RESEND_API_KEY);
                     const { error } = await resend.emails.send({
