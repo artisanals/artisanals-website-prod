@@ -13,6 +13,8 @@
     "dependencies": {
         "@better-auth/oauth-provider": "^1.6.7",
         "@convex-dev/better-auth": "^0.11.5",
+        "@tanstack/react-form": "^1.29.1",
+        "@tanstack/zod-form-adapter": "^0.42.1",
         "better-auth": "^1.6.5",
         "clsx": "^2.1.1",
         "convex": "^1.35.1",

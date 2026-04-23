@@ -33,5 +33,5 @@ export default async function AdminLayout({
         redirect("/authorisation-needed");
     }
 
-    return <>{children}</>;
+    return <div className="no-scrollbar">{children}</div>;
 }
