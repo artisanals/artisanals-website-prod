@@ -9,6 +9,7 @@ import { LenisProvider } from "@/providers/lenis-provider";
 import { branch, monaSans } from "@/providers/font-provider";
 import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { Toaster } from "@/components/ui/sonner";
+import QueryProvider from "@/providers/query-client-provider";
 
 export const metadata: Metadata = {
     title: "Artisanals",
@@ -31,9 +32,11 @@ export default function RootLayout({
         >
             <body className="flex min-h-full flex-col">
                 <GSAPProvider>
+                    <QueryProvider>
                     <ConvexClientProvider>
                         <LenisProvider>{children}</LenisProvider>
                     </ConvexClientProvider>
+                    </QueryProvider>
                 </GSAPProvider>
                 <Toaster />
             </body>
