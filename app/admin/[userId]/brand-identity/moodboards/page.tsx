@@ -12,7 +12,7 @@ import {
 } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
-const MoodboardsPage = () => {
+const BrandIdentity_MoodboardsPage = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [dimensions, setDimensions] = useState({ width: 1000, height: 1000 });
 
@@ -167,4 +167,4 @@ const MoodboardsPage = () => {
     );
 };
 
-export default MoodboardsPage;
+export default BrandIdentity_MoodboardsPage;
