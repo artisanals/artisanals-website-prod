@@ -2,7 +2,8 @@
 
 @theme inline {
     --font-mona-sans: var(--font-mona-sans);
-    --font-branch: var(--font-branch);
+    --font-bragan: var(--font-bragan);
+    --font-hanken-grotesk: var(--font-hanken-grotesk);
     --color-charcoal: #090909;
     --color-gold: #e9bd2d;
 }

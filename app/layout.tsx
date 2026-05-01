@@ -6,7 +6,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { GSAPProvider } from "@/providers/gsap-provider";
 import { LenisProvider } from "@/providers/lenis-provider";
-import { branch, monaSans } from "@/providers/font-provider";
+import { bragan, hankenGrotesk, monaSans } from "@/providers/font-provider";
 import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { Toaster } from "@/components/ui/sonner";
 import QueryProvider from "@/providers/query-client-provider";
@@ -26,7 +26,7 @@ export default function RootLayout({
             lang="en"
             className={cn(
                 monaSans.variable,
-                branch.variable,
+                bragan.variable, hankenGrotesk.variable,
                 `h-full antialiased`
             )}
         >

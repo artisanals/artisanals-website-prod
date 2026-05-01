@@ -1,4 +1,4 @@
-import { Mona_Sans } from "next/font/google";
+import { Mona_Sans, Hanken_Grotesk } from "next/font/google";
 import localFont from "next/font/local";
 
 // Using Inter as a fallback/placeholder for Mona Sans since Mona Sans is not available on Google Fonts.
@@ -9,8 +9,14 @@ export const monaSans = Mona_Sans({
     display: "swap",
 });
 
-export const branch = localFont({
-    src: "../public/fonts/Branch.ttf",
-    variable: "--font-branch",
+export const hankenGrotesk = Hanken_Grotesk({
+    subsets: ["latin"],
+    variable: "--font-hanken-grotesk",
+    display: "swap",
+});
+
+export const bragan = localFont({
+    src: "../public/fonts/bragan.otf",
+    variable: "--font-bragan",
     display: "swap",
 });
