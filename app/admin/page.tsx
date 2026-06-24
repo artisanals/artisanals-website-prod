@@ -3,10 +3,11 @@ const AdminPage = () => {
     // for now, we dont know what all it will have, so right now im just gonna add a nav here for brand-brief and brand-identity
 
     return (
-        <div className="h-screen w-screen bg-dotted px-12 py-8">
+        <div className="bg-dotted h-screen w-screen px-12 py-8">
             <div className="flex">
-                <p className="font-bragan text-[24px] text-charcoal">artisanals</p>
-                
+                <p className="font-bragan text-charcoal text-[24px]">
+                    artisanals admin page
+                </p>
             </div>
         </div>
     );
