@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { isAuthenticated, fetchAuthQuery } from "@/lib/auth-server";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 
 /**
  * Server-side admin layout — the secure gate.
